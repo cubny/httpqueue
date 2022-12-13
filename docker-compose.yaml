@@ -1,0 +1,14 @@
+version: '3.0'
+services:
+  app:
+    image: cubny/cart
+    command: /app/bin/cart
+    ports:
+      - "127.0.0.1:8080:8080"
+    build:
+      context: .
+    volumes:
+        - ./data:/app/data
+    ports:
+        - 8080:8080
+        - 8081:8081

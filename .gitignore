@@ -1,0 +1,5 @@
+.idea
+internal/tests/test.db
+vendor/
+data/cart.db
+coverage.html
