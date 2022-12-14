@@ -16,3 +16,9 @@ type Redis struct {
 	WriteTimeout time.Duration `seed:"1s" env:"REDIS_WRITE_TIMEOUT"`
 	DialTimeout  time.Duration `seed:"2s" env:"REDIS_DIAL_TIMEOUT"`
 }
+
+type Queue struct {
+	BatchSize                      int `seed:"1" env:"QUEUE_BATCH_SIZE"`
+	MaxTTLDays                     int `seed:"180" env:"QUEUE_MAX_TTL_DAYS"`
+	SchedulerFrequencyMilliSeconds int `seed:"500" env:"QUEUE_SCHEDULER_FREQUENCY_MILLI_SECONDS"`
+}
