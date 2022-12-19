@@ -3,26 +3,23 @@ package timer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cubny/cart/internal/app"
+	"github.com/cubny/httpqueue/internal/app/timer"
 	"net/url"
 	"time"
 )
 
 const (
-	timerKeyFmt      = "timer-%s" // timer-<timer_id>
-	schedulerLockFmt = "timer-schedule-%s"
-	queueLockFmt     = "timer-queue-%s"
+	timerKeyFmt = "timer-%s" // timer-<timer_id>
 )
 
 type redisTimer struct {
-	ID            string `json:"id"`
-	FireAtSecond  int64  `json:"fire_at"`
-	TotalAttempts int    `json:"total_attempts"`
-	URL           string `json:"url"`
+	ID           string `json:"id"`
+	FireAtSecond int64  `json:"fire_at"`
+	URL          string `json:"url"`
 }
 
-func serializeKey(t redisTimer) string {
-	return fmt.Sprintf(timerKeyFmt, t.ID)
+func serializeKey(timerID string) string {
+	return fmt.Sprintf(timerKeyFmt, timerID)
 }
 
 func serializeValue(t redisTimer) string {
@@ -37,33 +34,23 @@ func deserializeValue(str string) (redisTimer, error) {
 	return t, err
 }
 
-func fromInternal(t *app.Timer) redisTimer {
+func fromInternal(t *timer.Timer) redisTimer {
 	return redisTimer{
-		ID:            t.ID,
-		FireAtSecond:  t.FireAt.Unix(),
-		URL:           t.URL.String(),
-		TotalAttempts: t.TotalAttempts,
+		ID:           t.ID,
+		FireAtSecond: t.FireAt.Unix(),
+		URL:          t.URL.String(),
 	}
 }
 
-func toInternal(r redisTimer) (*app.Timer, error) {
-	URL, err := url.Parse(r.URL)
+func toInternal(r redisTimer) (*timer.Timer, error) {
+	URL, err := url.ParseRequestURI(r.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	return &app.Timer{
-		ID:            r.ID,
-		URL:           URL,
-		FireAt:        time.Unix(r.FireAtSecond, 0),
-		TotalAttempts: r.TotalAttempts,
+	return &timer.Timer{
+		ID:     r.ID,
+		URL:    *URL,
+		FireAt: time.Unix(r.FireAtSecond, 0),
 	}, nil
-}
-
-func timerSchedulerLockKey(timerID string) string {
-	return fmt.Sprintf(schedulerLockFmt, timerID)
-}
-
-func timerQueueLockKey(timerID string) string {
-	return fmt.Sprintf(queueLockFmt, timerID)
 }

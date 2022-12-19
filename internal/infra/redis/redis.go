@@ -2,8 +2,8 @@ package redis
 
 import (
 	"crypto/tls"
-	"github.com/cubny/cart/internal/config"
-	"github.com/go-redis/redis/v9"
+	"github.com/cubny/httpqueue/internal/config"
+	"github.com/go-redis/redis/v8"
 )
 
 // Client is a wrapper around a default Redis client with some helper methods.
@@ -16,32 +16,37 @@ func NewRedis(cfg *config.Redis) *Client {
 	return &Client{UniversalClient: redisClient(cfg)}
 }
 
+// MakeRedisClient returns the initiated UniversalClient
+func (c Client) MakeRedisClient() interface{} {
+	return c.UniversalClient
+}
+
 func redisClient(cfg *config.Redis) redis.UniversalClient {
 	var client redis.UniversalClient
 
 	var tlsCfg *tls.Config
-	if cfg.IsTLSEnabled.Get() {
+	if cfg.IsTLSEnabled {
 		tlsCfg = &tls.Config{}
 	}
 
-	if cfg.IsRedisCluster.Get() {
+	if cfg.IsRedisCluster {
 		client = redis.NewClusterClient(&redis.ClusterOptions{
-			Addrs:        []string{cfg.URL.Get()},
-			Password:     cfg.Password.Get(),
-			MaxRetries:   int(cfg.MaxRetries.Get()),
-			ReadTimeout:  cfg.ReadTimeout.Get(),
-			WriteTimeout: cfg.WriteTimeout.Get(),
-			DialTimeout:  cfg.DialTimeout.Get(),
+			Addrs:        []string{cfg.URL},
+			Password:     cfg.Password,
+			MaxRetries:   int(cfg.MaxRetries),
+			ReadTimeout:  cfg.ReadTimeout,
+			WriteTimeout: cfg.WriteTimeout,
+			DialTimeout:  cfg.DialTimeout,
 			TLSConfig:    tlsCfg,
 		})
 	} else {
 		client = redis.NewClient(&redis.Options{
-			Addr:         cfg.URL.Get(),
-			Password:     cfg.Password.Get(),
-			MaxRetries:   int(cfg.MaxRetries.Get()),
-			ReadTimeout:  cfg.ReadTimeout.Get(),
-			WriteTimeout: cfg.WriteTimeout.Get(),
-			DialTimeout:  cfg.DialTimeout.Get(),
+			Addr:         cfg.URL,
+			Password:     cfg.Password,
+			MaxRetries:   int(cfg.MaxRetries),
+			ReadTimeout:  cfg.ReadTimeout,
+			WriteTimeout: cfg.WriteTimeout,
+			DialTimeout:  cfg.DialTimeout,
 			TLSConfig:    tlsCfg,
 		})
 	}

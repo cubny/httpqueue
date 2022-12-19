@@ -2,14 +2,15 @@ package api_test
 
 import (
 	"bytes"
-	"github.com/cubny/cart/internal/infra/http/api"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/cubny/httpqueue/internal/infra/http/api"
 )
 
 func TestBadRequest(t *testing.T) {
@@ -20,7 +21,7 @@ func TestBadRequest(t *testing.T) {
 
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 
-	expectedBody := `{"error":{"code":100400, "details":"Bad Request - test"}}`
+	expectedBody := `{"error":{"code":400, "details":"Bad Request - test"}}`
 	assertBody(t, expectedBody, w.Body)
 }
 
@@ -32,7 +33,7 @@ func TestInternalError(t *testing.T) {
 
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
 
-	expectedBody := `{"error":{"code":100500, "details":"Internal error - test"}}`
+	expectedBody := `{"error":{"code":500, "details":"Internal error - test"}}`
 	assertBody(t, expectedBody, w.Body)
 }
 
@@ -44,7 +45,7 @@ func TestInvalidParams(t *testing.T) {
 
 	assert.Equal(t, w.Code, http.StatusUnprocessableEntity)
 
-	expectedBody := `{"error":{"code":100422, "details":"Invalid params - test"}}`
+	expectedBody := `{"error":{"code":422, "details":"Invalid params - test"}}`
 	assertBody(t, expectedBody, w.Body)
 }
 
@@ -56,7 +57,7 @@ func TestNotFound(t *testing.T) {
 
 	assert.Equal(t, w.Code, http.StatusNotFound)
 
-	expectedBody := `{"error":{"code":100404, "details":"Not found - test"}}`
+	expectedBody := `{"error":{"code":404, "details":"Not found - test"}}`
 	assertBody(t, expectedBody, w.Body)
 }
 

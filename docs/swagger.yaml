@@ -1,0 +1,163 @@
+basePath: /
+consumes:
+    - application/json
+definitions:
+    GetTimerResponse:
+        description: GetTimerResponse is the response model to get a timer
+        properties:
+            ID:
+                type: string
+            time_left:
+                format: int64
+                type: integer
+                x-go-name: TimeLeftSeconds
+        type: object
+        x-go-package: github.com/cubny/httpqueue/internal/infra/http/api
+    setTimersRequest:
+        description: SetTimersRequest is the request model to set a new timer
+        properties:
+            hours:
+                format: int64
+                type: integer
+                x-go-name: Hours
+            minutes:
+                format: int64
+                type: integer
+                x-go-name: Minutes
+            seconds:
+                format: int64
+                type: integer
+                x-go-name: Seconds
+            url:
+                type: string
+                x-go-name: URL
+        type: object
+        x-go-name: SetTimersRequest
+        x-go-package: github.com/cubny/httpqueue/internal/infra/http/api
+    setTimersResponse:
+        description: SetTimerResponse is the response model to set a new timer
+        properties:
+            id:
+                type: string
+                x-go-name: ID
+        type: object
+        x-go-name: SetTimerResponse
+        x-go-package: github.com/cubny/httpqueue/internal/infra/http/api
+host: httpqueue
+info:
+    description: |-
+        Documentation of the httpqueue service.
+        It is a service to schedule webhooks.
+    title: httpqueue
+    version: 1.1.0
+paths:
+    /timers:
+        post:
+            operationId: setTimersRequest
+            parameters:
+                - in: body
+                  name: RequestBody
+                  schema:
+                    $ref: '#/definitions/setTimersRequest'
+            responses:
+                "201":
+                    $ref: '#/responses/setTimers'
+                "400":
+                    $ref: '#/responses/invalidRequestBody'
+                "404":
+                    $ref: '#/responses/notFoundError'
+                "422":
+                    $ref: '#/responses/invalidParams'
+                "500":
+                    $ref: '#/responses/serverError'
+            summary: Schedule a new timer.
+    /timers/{timer_id}:
+        get:
+            operationId: getTimerRequest
+            parameters:
+                - description: TimerID that identifies a timer.
+                  in: path
+                  name: timer_id
+                  required: true
+                  type: string
+                  x-go-name: TimerID
+            responses:
+                "200":
+                    $ref: '#/responses/getTimer'
+                "404":
+                    $ref: '#/responses/notFoundError'
+                "422":
+                    $ref: '#/responses/invalidParams'
+                "500":
+                    $ref: '#/responses/serverError'
+            summary: Responds how much time remains until the timer's webhook is shot.
+produces:
+    - application/json
+responses:
+    getTimer:
+        description: GetTimerResponseWrapper is the wrapper.
+        schema:
+            $ref: '#/definitions/GetTimerResponse'
+    invalidParams:
+        description: InvalidParams is an error that is used when the required input fails validation..
+        schema:
+            properties:
+                Code:
+                    description: The validation message
+                    format: int64
+                    type: integer
+                Details:
+                    type: string
+            required:
+                - Code
+                - Details
+            type: object
+    invalidRequestBody:
+        description: InvalidRequestBody is an error that is used when the request body fails to be decoded.
+        schema:
+            properties:
+                Code:
+                    description: The validation message
+                    format: int64
+                    type: integer
+                Details:
+                    type: string
+            required:
+                - Code
+                - Details
+            type: object
+    notFoundError:
+        description: NotFoundError is an error that is used when the requested resource cannot be found.
+        schema:
+            properties:
+                Code:
+                    description: The not found message
+                    format: int64
+                    type: integer
+                Details:
+                    type: string
+            required:
+                - Code
+                - Details
+            type: object
+    serverError:
+        description: ServerError is a 500 error used to show that there is a problem with the server in processing the request.
+        schema:
+            properties:
+                Code:
+                    description: The server error message
+                    format: int64
+                    type: integer
+                Details:
+                    type: string
+            required:
+                - Code
+                - Details
+            type: object
+    setTimers:
+        description: SetTimerResponseWrapper is the wrapper.
+        schema:
+            $ref: '#/definitions/setTimersResponse'
+schemes:
+    - http
+swagger: "2.0"

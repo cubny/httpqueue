@@ -1,13 +1,13 @@
-FROM golang:alpine as buildenv
-ADD .   /app
-WORKDIR /app
-RUN mkdir -p /app/bin
-RUN apk --no-cache --update add gcc musl-dev
-RUN go build -mod=vendor -o bin/cart github.com/cubny/cart/cmd/...
+FROM golang:1.19.4-alpine as builder
+RUN apk --update add ca-certificates
+RUN cd ..
+RUN mkdir httpqueue
+WORKDIR httpqueue
+COPY . ./
+ENV GO111MODULE=on
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -installsuffix cgo -o httpqueue ./cmd/main.go
 
-#--------
-
-FROM alpine:latest
-COPY --from=buildenv /app/bin/* /app/bin/
-EXPOSE 8080 8081
-CMD ["/app/bin/cart"]
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /go/httpqueue/httpqueue .
+CMD ["./httpqueue"]

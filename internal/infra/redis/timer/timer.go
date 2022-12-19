@@ -3,171 +3,121 @@ package timer
 import (
 	"context"
 	"fmt"
-	"github.com/cubny/cart/internal/config"
 	"time"
 
-	"github.com/bsm/redislock"
-	"github.com/cubny/cart/internal/app"
-	infraredis "github.com/cubny/cart/internal/infra/redis"
-	"github.com/go-redis/redis/v9"
+	extRedis "github.com/go-redis/redis/v8"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/config"
 )
 
 const (
-	timerSchedulerQueueName = "timerSortedQueue"
-	timerTaskQueueName      = "timerTaskQueue"
+	timerTaskQueueName   = "timerTaskQueue"
+	timerBloomFilterName = "timerBloomFilter"
 )
 
-var ErrTimerKeyNotFound = fmt.Errorf("timer key not found")
+var (
+	// ErrDeserialization indicates an error in the deserialization of the timer value.
+	ErrDeserialization = fmt.Errorf("failed to deserialize timer value")
+	// ErrInvalidURL is
+	ErrInvalidURL = fmt.Errorf("timer has invalid URL")
+)
 
-type Outbox struct {
-	redisClient       *infraredis.Client
-	distributedLocker *redislock.Client
-	maxTTL            time.Duration
-	ticker            *time.Ticker
-	batchSize         int
+// DB holds repo functionalities for timers.
+type DB struct {
+	redisClient extRedis.UniversalClient
+	maxTTL      time.Duration
 }
 
-func NewOutbox(ctx context.Context, client *infraredis.Client, distributedLocker *redislock.Client, cfg *config.Queue, errChan chan<- error) *Outbox {
-	r := &Outbox{
-		redisClient:       client,
-		distributedLocker: distributedLocker,
-		maxTTL:            time.Duration(cfg.MaxTTLDays) * time.Hour * 24,
-		batchSize:         cfg.BatchSize,
-		ticker:            time.NewTicker(time.Duration(cfg.SchedulerFrequencyMilliSeconds) * time.Millisecond),
+// NewDB constructs a DB
+func NewDB(client extRedis.UniversalClient, cfg *config.DB) *DB {
+	return &DB{
+		redisClient: client,
+		maxTTL:      time.Duration(cfg.TimerMaxTTLDays) * time.Hour * 24,
 	}
-
-	go r.enqueueDuesOnIntervals(ctx, errChan)
-
-	return r
 }
 
-//func (r *Queue) Dequeue(ctx context.Context) ([]*Task, error) {
-//	tasks := make([]*Task, r.batchSize)
-//	for i := 0; i < r.batchSize; {
-//		timerID, err := r.redisClient.RPop(ctx, timerTaskQueueName).Result()
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		val, err := r.redisClient.Get(ctx, timerID).Result()
-//		switch {
-//		case err == redis.Nil:
-//			continue
-//		case err != nil:
-//			return nil, err
-//		}
-//
-//		dsTimer, err := deserializeValue(val)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		timer, err := toInternal(dsTimer)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		task := &Task{
-//			Timer: timer,
-//			OnFailure: func(ctx context.Context) error {
-//				return r.redisClient.RPush(ctx, timerTaskQueueName, timerID).Err()
-//			},
-//			OnFinish: func(ctx context.Context) error {
-//				pipe := r.redisClient.TxPipeline()
-//				pipe.Del(ctx, timer.ID)
-//				// add to bloom filter
-//				_, err := pipe.Exec(ctx)
-//				return err
-//			},
-//		}
-//
-//		tasks = append(tasks, task)
-//		i++
-//	}
-//
-//	return tasks, nil
-//
-//}
-
-//func (r *Queue) enqueueDuesOnIntervals(ctx context.Context, errChan chan<- error) {
-//	for {
-//		if _, ok := <-r.ticker.C; ok {
-//			return
-//		}
-//
-//		if err := r.enqueueDues(ctx); err != nil {
-//			errChan <- err
-//		}
-//	}
-//}
-//
-//func (r *Queue) Close() error {
-//	r.ticker.Stop()
-//	return r.redisClient.Close()
-//}
-//
-//// acquireLock gets the lock for the item with key
-//func (r *Queue) acquireLock(ctx context.Context, key string) *redislock.Lock {
-//	lock, err := r.distributedLocker.Obtain(ctx, key, 1000*time.Millisecond, nil)
-//	if err != nil {
-//		return nil
-//	}
-//	return lock
-//}
-
-func (r *Outbox) Store(ctx context.Context, timer *app.Timer) error {
+// AddTimer follows the outbox pattern:
+// 1. adds the timer object to the repo
+// 2. adds the timer key to the outbox table (for the message relay to pick it up)
+func (d *DB) AddTimer(ctx context.Context, timer *timer.Timer) error {
 	internalTimer := fromInternal(timer)
 	value := serializeValue(internalTimer)
-	key := serializeKey(internalTimer)
+	key := serializeKey(internalTimer.ID)
 
-	pipe := r.redisClient.TxPipeline()
+	pipe := d.redisClient.TxPipeline()
 
-	pipe.Set(ctx, key, value, r.maxTTL)
-	pipe.LPush(ctx, timerTaskQueueName, value)
-	//pipe.ZAdd(ctx, timerSchedulerQueueName, redis.Z{Member: key, Score: timer.DelayFromNowSeconds()})
+	pipe.Set(ctx, key, value, d.maxTTL)
+	pipe.LPush(ctx, timerTaskQueueName, internalTimer.ID)
 
 	_, err := pipe.Exec(ctx)
 	return err
 }
 
-func (r *Outbox) Find(ctx context.Context, timerID string) (*app.Timer, error) {
-	val, err := r.redisClient.Get(ctx, timerID).Result()
+// Find looks up a key in the k/v DB.
+// returns nil, nil when nothing found.
+func (d *DB) Find(ctx context.Context, timerID string) (*timer.Timer, error) {
+	key := serializeKey(timerID)
+	val, err := d.redisClient.Get(ctx, key).Result()
 	switch {
-	case err == redis.Nil:
-		return nil, ErrTimerKeyNotFound
+	case err == extRedis.Nil:
+		return nil, nil
 	case err != nil:
 		return nil, err
 	}
 
 	dsTimer, err := deserializeValue(val)
 	if err != nil {
-		return nil, err
+		return nil, ErrDeserialization
 	}
 
-	timer, err := toInternal(dsTimer)
+	t, err := toInternal(dsTimer)
 	if err != nil {
-		return nil, err
+		return nil, ErrInvalidURL
 	}
 
-	return timer, nil
+	return t, nil
 }
 
-func (r *Outbox) Dispatch(ctx context.Context) error {
-	for i := 0; i < r.batchSize; {
-		timerID, err := r.redisClient.RPop(ctx, timerTaskQueueName).Result()
-		if err != nil {
-			return err
-		}
+// IsArchived checks whether a timer is archived.
+func (d *DB) IsArchived(ctx context.Context, timerID string) (bool, error) {
+	return d.redisClient.Do(ctx, "BF.EXISTS", timerBloomFilterName, timerID).Bool()
+}
 
-		timer, err := r.Find(ctx, timerID)
+// Archive a timer. for space efficiency it uses a Bloom Filter.
+func (d *DB) Archive(ctx context.Context, timerID string) error {
+	key := serializeKey(timerID)
+	pipe := d.redisClient.TxPipeline()
+
+	pipe.Del(ctx, key)
+	pipe.Do(ctx, "BF.ADD", timerBloomFilterName, timerID)
+
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+// DequeueOutbox serves a message relay. It pops timers' keys out of the outbox queue.
+func (d *DB) DequeueOutbox(ctx context.Context, batchSize int) ([]*timer.Timer, error) {
+	timers := make([]*timer.Timer, 0, batchSize)
+	for len(timers) < batchSize {
+		timerID, err := d.redisClient.RPop(ctx, timerTaskQueueName).Result()
 		switch {
-		case err == ErrTimerKeyNotFound:
-			continue
+		case err == extRedis.Nil:
+			return timers, nil
 		case err != nil:
-			return err
+			return nil, err
 		}
 
-		r.queue.Enqueue(timer)
-		return nil
+		t, err := d.Find(ctx, timerID)
+		switch {
+		case err != nil:
+			return nil, err
+		case t == nil:
+			continue
+		}
+
+		timers = append(timers, t)
 	}
+
+	return timers, nil
 }

@@ -1,196 +1,174 @@
 package api_test
 
 import (
-	"github.com/cubny/cart/internal/service"
-	"github.com/cubny/cart/internal/tests"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
-
+	"encoding/json"
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/infra/http/api"
+	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
 )
 
-func TestHandler_CreateCart(t *testing.T) {
+type spec struct {
+	Name           string
+	ReqBody        string
+	ExpectedStatus int
+	ExpectedBody   string
+	Method         string
+	Target         string
+	MockFn         func(s *mocks.Service)
+}
+
+func (s *spec) execHTTPTestCases(sp *mocks.Service) func(t *testing.T) {
+	return func(t *testing.T) {
+		s.MockFn(sp)
+		handler, err := api.New(sp)
+		assert.Nil(t, err)
+		s.HandlerTest(t, handler)
+	}
+}
+
+// HandlerTest is a helper method to run http test cases
+func (s *spec) HandlerTest(t *testing.T, h *api.Router) {
+	t.Helper()
+
+	req := httptest.NewRequest(s.Method, s.Target, strings.NewReader(s.ReqBody))
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+
+	switch {
+	case s.ExpectedBody != "" && isJSON(s.ExpectedBody):
+		assert.JSONEq(t, s.ExpectedBody, string(body))
+	case s.ExpectedBody != "" && !isJSON(s.ExpectedBody):
+		assert.Equal(t, s.ExpectedBody, strings.TrimSpace(string(body)))
+	}
+
+	assert.Equal(t, s.ExpectedStatus, resp.StatusCode)
+}
+
+func isJSON(str string) bool {
+	var js json.RawMessage
+	return json.Unmarshal([]byte(str), &js) == nil
+}
+
+func TestRouter_setTimer(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	service := mocks.NewService(ctrl)
 
-	authMock := NewMockAuthProvider(ctrl)
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "abc123456").
-		Return(&auth.AccessKey{UserID: 1, Key: "abc123456"}, nil).AnyTimes()
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "unauthorised").
-		Return(nil, auth.ErrNotFound).AnyTimes()
-
-	serviceMock := NewMockServiceProvider(ctrl)
-	serviceMock.EXPECT().CreateCart(gomock.Any(), int64(1)).Return(&cart.Cart{
-		ID:     1,
-		UserID: 1,
-	}, nil)
-
-	tests := []tests.TestCase{
+	specs := []spec{
 		{
-			Name:           "ok",
-			Method:         http.MethodPost,
-			Target:         "/carts",
-			AccessKey:      "abc123456",
-			ExpectedBody:   `{"id":1, "user_id":1}`,
+			Name:   "ok",
+			Method: http.MethodPost,
+			Target: "/timers",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().CreateTimer(gomock.Any(), gomock.Any()).Return(&timer.Timer{
+					ID: "1",
+				}, nil)
+			},
+			ReqBody:        `{"url":"http://valid.url","hours":0,"minutes":0,"seconds":0}`,
+			ExpectedBody:   `{"id":"1"}`,
 			ExpectedStatus: http.StatusCreated,
 		},
 		{
-			Name:           "unauthorised - error",
-			Method:         http.MethodPost,
-			Target:         "/carts",
-			AccessKey:      "unauthorised",
-			ExpectedBody:   `{"error":{"code":100401, "details": "Unauthorised access - incorrect access_key"}}`,
-			ExpectedStatus: http.StatusUnauthorized,
-		},
-	}
-
-	execHTTPTestCases(t, serviceMock, authMock, tests)
-}
-
-func TestHandler_AddItem(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	authMock := NewMockAuthProvider(ctrl)
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "abc123456").
-		Return(&auth.AccessKey{UserID: 1, Key: "abc123456"}, nil).AnyTimes()
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "unauthorised").
-		Return(nil, auth.ErrNotFound).AnyTimes()
-
-	firstItem := &cart.Item{
-		CartID:    int64(1),
-		ProductID: int64(1),
-		Quantity:  int64(1),
-		Price:     cart.Price(100.00),
-	}
-	secondItem := &cart.Item{
-		CartID:    int64(2),
-		ProductID: int64(1),
-		Quantity:  int64(1),
-		Price:     cart.Price(100.00),
-	}
-	serviceMock := NewMockServiceProvider(ctrl)
-	serviceMock.EXPECT().
-		AddItem(gomock.Any(), int64(1), firstItem).
-		Return(nil)
-	serviceMock.EXPECT().
-		AddItem(gomock.Any(), int64(1), secondItem).
-		Return(service.ErrTimerNotFound)
-
-	testsCases := []tests.TestCase{
-		{
-			Name:           "ok",
-			Method:         http.MethodPost,
-			Target:         "/carts/1/items",
-			AccessKey:      "abc123456",
-			ReqBody:        `{"product_id":1, "quantity":1, "price": 100.00}`,
-			ExpectedBody:   `{"cart_id":1, "id":0, "price":100, "product_id":1, "quantity":1}`,
-			ExpectedStatus: http.StatusCreated,
-		},
-		{
-			Name:           "cart does not exist - error",
-			Method:         http.MethodPost,
-			Target:         "/carts/2/items",
-			AccessKey:      "abc123456",
-			ReqBody:        `{"product_id":1, "quantity":1, "price": 100.00}`,
-			ExpectedBody:   `{"error":{"code":100404, "details":"Not found - cart does not exist"}}`,
-			ExpectedStatus: http.StatusNotFound,
-		},
-	}
-
-	execHTTPTestCases(t, serviceMock, authMock, testsCases)
-}
-
-func TestHandler_RemoveItem(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	authMock := NewMockAuthProvider(ctrl)
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "abc123456").
-		Return(&auth.AccessKey{UserID: 1, Key: "abc123456"}, nil).AnyTimes()
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "unauthorised").
-		Return(nil, auth.ErrNotFound).AnyTimes()
-
-	serviceMock := NewMockServiceProvider(ctrl)
-	serviceMock.EXPECT().RemoveItem(gomock.Any(), int64(1), int64(1)).Return(nil)
-	serviceMock.EXPECT().RemoveItem(gomock.Any(), int64(1), int64(2)).Return(service.ErrItemNotFound)
-
-	testsCases := []tests.TestCase{
-		{
-			Name:           "ok",
-			Method:         http.MethodDelete,
-			Target:         "/items/1",
-			AccessKey:      "abc123456",
-			ExpectedStatus: http.StatusNoContent,
-		},
-		{
-			Name:           "item not found",
-			Method:         http.MethodDelete,
-			Target:         "/items/2",
-			AccessKey:      "abc123456",
-			ExpectedBody:   `{"error":{"code":100404, "details":"Not found - item does not exist"}}`,
-			ExpectedStatus: http.StatusNotFound,
-		},
-	}
-
-	execHTTPTestCases(t, serviceMock, authMock, testsCases)
-}
-
-func TestHandler_EmptyCart(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	authMock := NewMockAuthProvider(ctrl)
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "abc123456").
-		Return(&auth.AccessKey{UserID: 1, Key: "abc123456"}, nil).AnyTimes()
-	authMock.EXPECT().
-		VerifyAccessKey(gomock.Any(), "unauthorised").
-		Return(nil, auth.ErrNotFound).AnyTimes()
-
-	serviceMock := NewMockServiceProvider(ctrl)
-	serviceMock.EXPECT().EmptyCart(gomock.Any(), int64(1), int64(1)).Return(nil)
-	serviceMock.EXPECT().EmptyCart(gomock.Any(), int64(1), int64(2)).Return(service.ErrTimerNotFound)
-	serviceMock.EXPECT().EmptyCart(gomock.Any(), int64(1), int64(3)).Return(assert.AnError)
-
-	testsCases := []tests.TestCase{
-		{
-			Name:           "ok - 204",
-			Method:         http.MethodDelete,
-			Target:         "/carts/1/items",
-			AccessKey:      "abc123456",
-			ExpectedStatus: http.StatusNoContent,
-		},
-		{
-			Name:           "cart not found - 404",
-			Method:         http.MethodDelete,
-			Target:         "/carts/2/items",
-			AccessKey:      "abc123456",
-			ExpectedStatus: http.StatusNotFound,
-		},
-		{
-			Name:           "cart id string - invalid param",
-			Method:         http.MethodDelete,
-			Target:         "/carts/cart/items",
-			AccessKey:      "abc123456",
-			ExpectedStatus: http.StatusUnprocessableEntity,
-			ExpectedBody:   `{"error":{"code":100422, "details":"Invalid params - cart_id param is not a valid number"}}`,
-		},
-		{
-			Name:           "storage error - 500",
-			Method:         http.MethodDelete,
-			Target:         "/carts/3/items",
-			AccessKey:      "abc123456",
+			Name:   "service returns error",
+			Method: http.MethodPost,
+			Target: "/timers",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().CreateTimer(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
+			},
+			ReqBody:        `{"url":"http://valid.url","hours":0,"minutes":0,"seconds":0}`,
+			ExpectedBody:   `{"error":{"code":500, "details":"Internal error - failed to set timers due to server internal error"}}`,
 			ExpectedStatus: http.StatusInternalServerError,
-			ExpectedBody:   `{"error":{"code":100500, "details":"Internal error - could not empty cart"}}`,
+		},
+		{
+			Name:           "invalid url",
+			Method:         http.MethodPost,
+			MockFn:         func(s *mocks.Service) {},
+			Target:         "/timers",
+			ReqBody:        `{"url":"invalid.url","hours":0,"minutes":0,"seconds":0}`,
+			ExpectedBody:   `{"error":{"code":422, "details":"Invalid params - invalid param: invalid 'POST' field 'url'"}}`,
+			ExpectedStatus: http.StatusUnprocessableEntity,
+		},
+		{
+			Name:           "empty body",
+			Method:         http.MethodPost,
+			MockFn:         func(s *mocks.Service) {},
+			Target:         "/timers",
+			ReqBody:        ``,
+			ExpectedBody:   `{"error":{"code":400, "details":"Bad Request - cannot set timers, bad request payload"}}`,
+			ExpectedStatus: http.StatusBadRequest,
 		},
 	}
-	execHTTPTestCases(t, serviceMock, authMock, testsCases)
+
+	for _, s := range specs {
+		t.Run(s.Name, s.execHTTPTestCases(service))
+	}
+}
+
+func TestRouter_getTimer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	service := mocks.NewService(ctrl)
+	now := time.Now()
+
+	specs := []spec{
+		{
+			Name:   "ok",
+			Method: http.MethodGet,
+			Target: "/timers/1",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().GetTimer(gomock.Any(), "1").Return(&timer.Timer{
+					ID:     "1",
+					FireAt: now.Add(2 * time.Second),
+				}, nil)
+			},
+			ExpectedBody:   `{"ID":"1", "time_left":1}`,
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			Name:   "not found",
+			Method: http.MethodGet,
+			Target: "/timers/1",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().GetTimer(gomock.Any(), "1").Return(nil, timer.ErrTimerNotFound)
+			},
+			ExpectedBody:   `{"error":{"code":404, "details":"Not found - timer does not exist"}}`,
+			ExpectedStatus: http.StatusNotFound,
+		},
+		{
+			Name:   "timer is archived",
+			Method: http.MethodGet,
+			Target: "/timers/1",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().GetTimer(gomock.Any(), "1").Return(nil, timer.ErrTimerArchived)
+			},
+			ExpectedBody:   `{"ID":"1", "time_left":0}`,
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			Name:   "service unknown error",
+			Method: http.MethodGet,
+			Target: "/timers/1",
+			MockFn: func(s *mocks.Service) {
+				s.EXPECT().GetTimer(gomock.Any(), "1").Return(nil, assert.AnError)
+			},
+			ExpectedBody:   `{"error":{"code":500, "details":"Internal error - failed to get timers due to server internal error"}}`,
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+	}
+	for _, s := range specs {
+		t.Run(s.Name, s.execHTTPTestCases(service))
+	}
 }

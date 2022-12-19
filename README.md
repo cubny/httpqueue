@@ -17,10 +17,10 @@ DEETE /carts/:cartID/items
 ```
 All methods expect a authorisation header in the format of `"Authorisation: Key {{key}}"`.
 
-For more comprehensive usage of the methods, checkout the [http-client.http](https://github.com/cubny/cart/blob/master/http-client.http) file
+For more comprehensive usage of the methods, checkout the [http-client.http](https://github.com/cubny/httpqueue/blob/master/http-client.http) file
 
 ## How to run the service
-the [Makefile](https://github.com/cubny/cart/blob/master/Makefile) contains few subcommands to build, migrate and run the application.
+the [Makefile](https://github.com/cubny/httpqueue/blob/master/Makefile) contains few subcommands to build, migrate and run the application.
 both as a docker container or standalone. 
 
 #### a. In container
@@ -45,9 +45,9 @@ make run
 ## How to consume the API
 Of course, you can use the tools of your choice, but the project provides two convenient ways to just play with the API:
 
-1- If you like command lines, the [Makefile](https://github.com/cubny/cart/blob/master/Makefile) you can find some sub-commands 
+1- If you like command lines, the [Makefile](https://github.com/cubny/httpqueue/blob/master/Makefile) you can find some sub-commands 
 
-2- If you prefer Goland, the [http-client.http](https://github.com/cubny/cart/blob/master/http-client.http)
+2- If you prefer Goland, the [http-client.http](https://github.com/cubny/httpqueue/blob/master/http-client.http)
 
 ## Running the Tests
 The code base includes two types of tests: unit tests and integration tests
@@ -65,12 +65,10 @@ make integrations
 ## Some notes about the code
 - There are comments everywhere explaining the decisions I have made, so please make sure to read them if you want to understand why I made some choices over the others
 - I implemented this service in Go, not because I believed it was the proper language for such a service, but because currently it is the language I am most productive with
-- I could have mock the product service as well and when a product is being added to a cart, I could have retrieved the price from that service. I made this choice to keep things simple for the purpose of the project.
-- For production, it is better to use environment variables, but I used flags to make testing and development easier. later on they should be changed to environment variables.
-- Instrumenting services is better to be done with critical metrics to the system and tracing every detail of the application. I didn't include tracing for the lack of time, but included a sample prometheus metric to count 500 errors. the prometheus handler is exposed in 8081 port.
+- Instrumenting services is better to be done with critical metrics to the system and tracing every detail of the application. I didn'task include tracing for the lack of time, but included a sample prometheus metric to count 500 errors. the prometheus handler is exposed in 8081 port.
 
 ## Assumptions
-- Since this is the first implementation of the service I didn't include API versioning, it can be easily done in upstream 
+- Since this is the first implementation of the service I didn'task include API versioning, it can be easily done in upstream 
 layers like the reverse-proxy or the application load balancer for the first version. I assumed that later when the next version
 of the API is about to release, the next version can become a separate application, or the versioning can make its way to the current application.
 
@@ -81,6 +79,12 @@ of the API is about to release, the next version can become a separate applicati
 - when the Auth service is ready, the auth client should be changed to reflect the actual users and access keys instead of stubbing the service.
 
 
-## Why Redis ZSET?
-Common technologies for delayed jobs that I am aware of are Redis and SQS. the SQS delayed has a [limit of maximum 15m](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html). 
-I assumed that the http-request-scheduler is not limited to 15m but the timers could be set for any point in time in the future.
+## Why Redis?
+- Redis can be underlying technology for both storage and queue. Using only one external dependency helps with the availability of the service. 
+
+
+## TODO
+- [ ] implement politeness for the task processor so in case of 429 it reads the response header or retries with exponential backoff
+- [ ] Use swagger to generate API docs
+- [ ] DNS caching for the HTTP Client
+- [ ] Create a deny-list for hosts with many non-retryable errors

@@ -1,14 +1,54 @@
-version: '3.0'
+version: '3.7'
 services:
-  app:
-    image: cubny/cart
-    command: /app/bin/cart
+  redis:
+    image: redislabs/rebloom:2.4.3
+    container_name: rebloom
     ports:
-      - "127.0.0.1:8080:8080"
+      - "6379:6379"
+  api:
+    depends_on:
+      - redis
+    links:
+      - redis
     build:
       context: .
-    volumes:
-        - ./data:/app/data
+      dockerfile: ./Dockerfile
+    environment:
+      APP_MODE: 'api'
+      HTTP_PORT: 8080
+      REDIS_URL: redis:6379
+      REDIS_IS_CLUSTER: 'false'
+      REDIS_IS_TLS: 'false'
     ports:
-        - 8080:8080
-        - 8081:8081
+      - "8080:8080"
+      - "8081:8081"
+  relay:
+    depends_on:
+      - redis
+    links:
+      - redis
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      APP_MODE: 'relay'
+      REDIS_URL: redis:6379
+      REDIS_IS_CLUSTER: 'false'
+      REDIS_IS_TLS: 'false'
+    ports:
+      - "8082:8081"
+  workers:
+    depends_on:
+      - redis
+    links:
+      - redis
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      APP_MODE: 'workers'
+      REDIS_URL: redis:6379
+      REDIS_IS_CLUSTER: 'false'
+      REDIS_IS_TLS: 'false'
+    ports:
+      - "8083:8081"

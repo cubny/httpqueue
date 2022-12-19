@@ -1,0 +1,233 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "Documentation of the httpqueue service.\nIt is a service to schedule webhooks.",
+    "title": "httpqueue",
+    "version": "1.1.0"
+  },
+  "host": "httpqueue",
+  "basePath": "/",
+  "paths": {
+    "/timers": {
+      "post": {
+        "summary": "Schedule a new timer.",
+        "operationId": "setTimersRequest",
+        "parameters": [
+          {
+            "name": "RequestBody",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/setTimersRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/setTimers"
+          },
+          "400": {
+            "$ref": "#/responses/invalidRequestBody"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          },
+          "422": {
+            "$ref": "#/responses/invalidParams"
+          },
+          "500": {
+            "$ref": "#/responses/serverError"
+          }
+        }
+      }
+    },
+    "/timers/{timer_id}": {
+      "get": {
+        "summary": "Responds how much time remains until the timer's webhook is shot.",
+        "operationId": "getTimerRequest",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "TimerID",
+            "description": "TimerID that identifies a timer.",
+            "name": "timer_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getTimer"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          },
+          "422": {
+            "$ref": "#/responses/invalidParams"
+          },
+          "500": {
+            "$ref": "#/responses/serverError"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "GetTimerResponse": {
+      "description": "GetTimerResponse is the response model to get a timer",
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
+        },
+        "time_left": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "TimeLeftSeconds"
+        }
+      },
+      "x-go-package": "github.com/cubny/httpqueue/internal/infra/http/api"
+    },
+    "setTimersRequest": {
+      "description": "SetTimersRequest is the request model to set a new timer",
+      "type": "object",
+      "properties": {
+        "hours": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Hours"
+        },
+        "minutes": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Minutes"
+        },
+        "seconds": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Seconds"
+        },
+        "url": {
+          "type": "string",
+          "x-go-name": "URL"
+        }
+      },
+      "x-go-name": "SetTimersRequest",
+      "x-go-package": "github.com/cubny/httpqueue/internal/infra/http/api"
+    },
+    "setTimersResponse": {
+      "description": "SetTimerResponse is the response model to set a new timer",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-go-name": "ID"
+        }
+      },
+      "x-go-name": "SetTimerResponse",
+      "x-go-package": "github.com/cubny/httpqueue/internal/infra/http/api"
+    }
+  },
+  "responses": {
+    "getTimer": {
+      "description": "GetTimerResponseWrapper is the wrapper.",
+      "schema": {
+        "$ref": "#/definitions/GetTimerResponse"
+      }
+    },
+    "invalidParams": {
+      "description": "InvalidParams is an error that is used when the required input fails validation..",
+      "schema": {
+        "type": "object",
+        "required": [
+          "Code",
+          "Details"
+        ],
+        "properties": {
+          "Code": {
+            "description": "The validation message",
+            "type": "integer",
+            "format": "int64"
+          },
+          "Details": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "invalidRequestBody": {
+      "description": "InvalidRequestBody is an error that is used when the request body fails to be decoded.",
+      "schema": {
+        "type": "object",
+        "required": [
+          "Code",
+          "Details"
+        ],
+        "properties": {
+          "Code": {
+            "description": "The validation message",
+            "type": "integer",
+            "format": "int64"
+          },
+          "Details": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notFoundError": {
+      "description": "NotFoundError is an error that is used when the requested resource cannot be found.",
+      "schema": {
+        "type": "object",
+        "required": [
+          "Code",
+          "Details"
+        ],
+        "properties": {
+          "Code": {
+            "description": "The not found message",
+            "type": "integer",
+            "format": "int64"
+          },
+          "Details": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "serverError": {
+      "description": "ServerError is a 500 error used to show that there is a problem with the server in processing the request.",
+      "schema": {
+        "type": "object",
+        "required": [
+          "Code",
+          "Details"
+        ],
+        "properties": {
+          "Code": {
+            "description": "The server error message",
+            "type": "integer",
+            "format": "int64"
+          },
+          "Details": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "setTimers": {
+      "description": "SetTimerResponseWrapper is the wrapper.",
+      "schema": {
+        "$ref": "#/definitions/setTimersResponse"
+      }
+    }
+  }
+}

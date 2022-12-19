@@ -1,31 +1,16 @@
-### create cart
-POST {{cart-api}}/carts
-Authorisation: Key {{key}}
-Content-Type: application/json
-
-> {% client.global.set("cartID", response.body["id"]); %}
-
-### add product to cart
-POST {{cart-api}}/carts/{{cartID}}/items
-Authorisation: Key {{key}}
+### set timers
+POST {{api}}/timers
 Content-Type: application/json
 
 {
-  "product_id" :1,
-  "quantity": 1,
-  "price": 10.50
+  "url": "https://webhook.site/e2faa3ee-3f52-4822-9ed7-f58ee4fa23cf",
+  "hours": 1,
+  "minutes": 0,
+  "seconds": 0
 }
 
-> {%  client.global.set("itemID", response.body["id"]); %}
-
+> {% client.global.set("timerID", response.body["id"]); %}
 
 ### remove item from cart
-DELETE {{cart-api}}/items/{{itemID}}
-Authorisation: Key {{key}}
+GET {{api}}/timers/{{timerID}}
 Content-Type: application/json
-
-### empty cart
-DELETE {{cart-api}}/carts/{{cartID}}/items
-Authorisation: Key {{key}}
-Content-Type: application/json
-
