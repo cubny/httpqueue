@@ -8,8 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	timer "github.com/cubny/httpqueue/internal/app/timer"
 	gomock "github.com/golang/mock/gomock"
+
+	timer "github.com/cubny/httpqueue/internal/app/timer"
 )
 
 // HttpClient is a mock of HttpClient interface.

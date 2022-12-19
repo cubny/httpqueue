@@ -3,13 +3,15 @@ package timer
 import (
 	"context"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/cubny/httpqueue/internal/config"
-	mocks2 "github.com/cubny/httpqueue/internal/mocks/external/asynq"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/config"
+	mocks2 "github.com/cubny/httpqueue/internal/mocks/external/asynq"
 )
 
 func TestProducer_Send(t *testing.T) {

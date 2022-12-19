@@ -3,14 +3,15 @@ package internal
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/cubny/httpqueue/internal/app/timer"
 	"github.com/cubny/httpqueue/internal/config"
@@ -19,7 +20,6 @@ import (
 	internalHttpClient "github.com/cubny/httpqueue/internal/infra/http/client/timer"
 	"github.com/cubny/httpqueue/internal/infra/redis"
 	repo "github.com/cubny/httpqueue/internal/infra/redis/timer"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type App struct {

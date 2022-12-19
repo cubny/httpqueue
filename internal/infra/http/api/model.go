@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
 	"net/http"
 	"net/url"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
 )
 
 // SetTimersRequest is the request model to set a new timer

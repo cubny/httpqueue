@@ -2,12 +2,14 @@ package timer
 
 import (
 	"context"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
 )
 
 func TestClient_Shoot(t *testing.T) {

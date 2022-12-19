@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/cubny/httpqueue/internal/app/timer"
+	"net/http"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
 )
 
 // setTimer is the handler for

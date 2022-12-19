@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/cubny/httpqueue/internal"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/cubny/httpqueue/internal"
 )
 
 func main() {

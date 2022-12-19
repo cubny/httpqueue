@@ -1,11 +1,13 @@
 package timer
 
 import (
-	mocks2 "github.com/cubny/httpqueue/internal/mocks/external/asynq"
-	mocks "github.com/cubny/httpqueue/internal/mocks/external/redis"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
-	"testing"
+
+	mocks2 "github.com/cubny/httpqueue/internal/mocks/external/asynq"
+	mocks "github.com/cubny/httpqueue/internal/mocks/external/redis"
 )
 
 func TestNewConsumer(t *testing.T) {

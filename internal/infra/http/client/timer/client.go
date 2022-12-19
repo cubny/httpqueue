@@ -56,11 +56,11 @@ func (c *Client) Shoot(ctx context.Context, timer *timer.Timer) error {
 	// TODO: implement special treatment for 429 client error.
 	shouldRetry, checkErr := isHTTPStatusCodeRetryable(resp, doErr)
 	switch {
-	case shouldRetry == true && checkErr != nil:
+	case shouldRetry && checkErr != nil:
 		return fmt.Errorf("http request failed: %v, %w", checkErr, ErrRetryableRequestFailure)
-	case shouldRetry == true && checkErr == nil:
+	case shouldRetry && checkErr == nil:
 		return fmt.Errorf("http request failed: %v, %w", checkErr, ErrRetryableRequestFailure)
-	case shouldRetry == false && checkErr == nil:
+	case !shouldRetry && checkErr == nil:
 		return nil
 	}
 

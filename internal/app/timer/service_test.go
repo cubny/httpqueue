@@ -3,14 +3,16 @@ package timer_test
 import (
 	"context"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	timer2 "github.com/cubny/httpqueue/internal/infra/redis/timer"
-	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	timer2 "github.com/cubny/httpqueue/internal/infra/redis/timer"
+	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
 )
 
 func TestServiceImp_CreateTimer(t *testing.T) {

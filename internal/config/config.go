@@ -2,8 +2,9 @@ package config
 
 import (
 	"context"
-	"github.com/sethvargo/go-envconfig"
 	"time"
+
+	"github.com/sethvargo/go-envconfig"
 )
 
 type Config struct {

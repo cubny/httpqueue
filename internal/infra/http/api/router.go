@@ -19,13 +19,14 @@ package api
 
 import (
 	"errors"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/cubny/httpqueue/internal/infra/http/api/middleware"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/infra/http/api/middleware"
 )
 
 var (

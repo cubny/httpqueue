@@ -2,7 +2,7 @@ package api_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -64,7 +64,7 @@ func TestNotFound(t *testing.T) {
 func assertBody(t *testing.T, expectedBody string, actualBody *bytes.Buffer) {
 	t.Helper()
 
-	body, err := ioutil.ReadAll(actualBody)
+	body, err := io.ReadAll(actualBody)
 	assert.Nil(t, err)
 	assert.JSONEq(t, expectedBody, string(body))
 }

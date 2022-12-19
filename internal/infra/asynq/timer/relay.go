@@ -3,10 +3,12 @@ package timer
 import (
 	"context"
 	"errors"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/cubny/httpqueue/internal/app/timer"
 	"github.com/cubny/httpqueue/internal/config"
-	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Relay is responsible for relaying messages from the outbox to the producer

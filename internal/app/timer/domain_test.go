@@ -2,11 +2,12 @@ package timer
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewTimer(t *testing.T) {
@@ -214,7 +215,7 @@ func TestTimer_Validate(t1 *testing.T) {
 				URL:    tt.fields.URL,
 				FireAt: tt.fields.FireAt,
 			}
-			tt.wantErr(t1, t.Validate(), fmt.Sprintf("Validate()"))
+			tt.wantErr(t1, t.Validate(), "Validate()")
 		})
 	}
 }

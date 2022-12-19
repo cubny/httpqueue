@@ -1,9 +1,9 @@
 package api
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_setTimersRequest_Validate(t *testing.T) {
@@ -37,7 +37,7 @@ func Test_setTimersRequest_Validate(t *testing.T) {
 				Seconds: tt.fields.Seconds,
 				URL:     tt.fields.URL,
 			}
-			tt.wantErr(t, r.Validate(), fmt.Sprintf("Validate()"))
+			tt.wantErr(t, r.Validate(), "Validate()")
 		})
 	}
 }

@@ -2,8 +2,10 @@ package redis
 
 import (
 	"crypto/tls"
-	"github.com/cubny/httpqueue/internal/config"
+
 	"github.com/go-redis/redis/v8"
+
+	"github.com/cubny/httpqueue/internal/config"
 )
 
 // Client is a wrapper around a default Redis client with some helper methods.

@@ -1,5 +1,13 @@
+# Binaries for programs and plugins
+httpqueue
+bin
+
+# Test binary, built with `go test -c`
+*.test
+
+# IDEs
+.vscode
 .idea
-internal/tests/test.db
-vendor/
-data/cart.db
-coverage.html
+
+# Coverage reports
+reports

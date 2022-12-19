@@ -1,48 +1,52 @@
-# cart
-shopping cart service
+# httpqueue 
+Schedule HTTP requests in the future
 
-**cart** is a RESTful API microservice extracted from a monolithic application. 
-It has a basic authentication functionality, it uses sqlite3 for data storage and exposes metrics. 
+**httpqueue** exposes an HTTP API to schedule HTTP requests with the desired delay.
+It is supposed to be used as an internal tool.
 
-The API exposes 4 methods as follows:
+The API exposes 2 methods as follows:
+
+1. schedule a timer
 ```
-# create a cart
-POST /carts
-# add a product to a cart
-POST /carts/:cartID/items
-# remove an item from a cart
-DELETE /items/:itemID
-# empty a cart
-DEETE /carts/:cartID/items
+POST /timers
 ```
-All methods expect a authorisation header in the format of `"Authorisation: Key {{key}}"`.
+2. get a timer using the timer ID 
+```
+GET /timers/{timer_id}
+```
 
-For more comprehensive usage of the methods, checkout the [http-client.http](https://github.com/cubny/httpqueue/blob/master/http-client.http) file
+The full API specification is documented in `docs/swagger.json`.  [swagger.json](https://github.com/cubny/httpqueue/blob/master/docs/swagger.json).
+Use a Swagger UI or the [online editor](https://editor.swagger.io/) to explore the API Doc.
+
+If your IDE of choice is Goland you can also experiment with the API using [http-client.http](https://github.com/cubny/httpqueue/blob/master/http-client.http) file.
 
 ## How to run the service
-the [Makefile](https://github.com/cubny/httpqueue/blob/master/Makefile) contains few subcommands to build, migrate and run the application.
-both as a docker container or standalone. 
+The [Makefile](https://github.com/cubny/httpqueue/blob/master/Makefile) contains all the tooling run, build, test, and start developing.
+See the full list of available make targets using:
+```bash
+make help
+```
 
-#### a. In container
-- First run (builds the image and creates the database file)
-```
-make docker-firstrun
-```
-- Later you can run the application using the existing database
-```
+### a. Running the service using Docker
+It's possible to run the service without installing any go tools thanks to Docker and Docker Compose.
+```bash
 make docker-run
 ```
-#### b. Standalone
-- First run (creates the database file)
-```
-make firstrun
-```
-- Later you can run the application using the existing database
-```
-make run
-```
 
-## How to consume the API
+Now the API service is available at http://localhost:8080/
+
+Adjust the HTTP default port in the `docker-compose.yaml` file.
+
+#### b. Running the service without Docker
+```bash
+make run 
+```
+Similarly, the API is available at http://localhost:8080/. 
+
+Adjust the Port using `HTTP_PORT` environment variable 
+
+
+## How to use the API
 Of course, you can use the tools of your choice, but the project provides two convenient ways to just play with the API:
 
 1- If you like command lines, the [Makefile](https://github.com/cubny/httpqueue/blob/master/Makefile) you can find some sub-commands 

@@ -3,15 +3,17 @@ package timer
 import (
 	"context"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/cubny/httpqueue/internal/config"
-	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/config"
+	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
 )
 
 func TestNewRelay(t *testing.T) {
@@ -93,10 +95,8 @@ func TestRelay_Start(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		go r.Start(ctx)
-		select {
-		case <-time.After(350 * time.Millisecond):
-			cancel()
-		}
+		time.Sleep(350 * time.Millisecond)
+		cancel()
 	})
 }
 

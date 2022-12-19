@@ -2,17 +2,19 @@ package api_test
 
 import (
 	"encoding/json"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/cubny/httpqueue/internal/infra/http/api"
-	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/infra/http/api"
+	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
 )
 
 type spec struct {

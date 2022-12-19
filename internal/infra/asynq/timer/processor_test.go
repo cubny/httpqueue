@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	timer2 "github.com/cubny/httpqueue/internal/infra/http/client/timer"
-	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
+	"net/url"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/url"
-	"testing"
-	"time"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	timer2 "github.com/cubny/httpqueue/internal/infra/http/client/timer"
+	mocks "github.com/cubny/httpqueue/internal/mocks/app/timer"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -73,7 +75,10 @@ func TestProcessor_ProcessTask(t *testing.T) {
 		return func(t *testing.T) {
 			service := mocks.NewService(ctrl)
 			httpClient := mocks.NewHttpClient(ctrl)
+
 			p, err := NewProcessor(service, httpClient)
+			require.NoError(t, err)
+
 			payload := &Payload{TimerID: "1"}
 			payloadBytes, err := json.Marshal(payload)
 			require.NoError(t, err)

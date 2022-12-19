@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
-	"github.com/cubny/httpqueue/internal/config"
-	mocks "github.com/cubny/httpqueue/internal/mocks/external/redis"
+	"sort"
+	"testing"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sort"
-	"testing"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
+	"github.com/cubny/httpqueue/internal/config"
+	mocks "github.com/cubny/httpqueue/internal/mocks/external/redis"
 )
 
 func TestDB_AddTimer(t *testing.T) {

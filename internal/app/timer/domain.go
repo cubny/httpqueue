@@ -3,9 +3,10 @@ package timer
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"net/url"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var ErrFireAtInPast = errors.New("time in the past")
@@ -47,7 +48,7 @@ func NewTimer(rawURL string, hours, minutes, seconds time.Duration) (*Timer, err
 }
 
 func (t *Timer) DelayFromNowSeconds() float64 {
-	return t.FireAt.Sub(time.Now()).Seconds()
+	return time.Until(t.FireAt).Seconds()
 }
 
 func (t *Timer) Validate() error {

@@ -3,9 +3,10 @@ package timer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cubny/httpqueue/internal/app/timer"
 	"net/url"
 	"time"
+
+	"github.com/cubny/httpqueue/internal/app/timer"
 )
 
 const (
