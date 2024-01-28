@@ -84,12 +84,6 @@ See the code coverage:
 make coverage-report
 ```
 
-## Some notes about the code
-- There are some comments explaining the decisions I have made, so please make sure to read them if you want to understand why I made some choices over the others
-- I implemented this service in Go, not because I believed it was the best tool for such a service, but because currently it is the language I am most productive with at the moment.
-- Instrumenting services is better to be done with critical metrics to the system and tracing every detail of the application. I didn't include tracing because of time constraints, but included some prometheus metrics. the prometheus handler is exposed in 8081 port in all components.
-- I chose Redis not only because it's a good option for both queueing and storing data but also because of simplicity. AS the result the service only has one dependency.
-
 ## Assumptions
 - The service is supposed to be used internally, hence there is no throttling and no authentication.
 - The timers are not required to be persisted permanently after the webhooks are called. Only the timer ID is kept. 
@@ -97,12 +91,3 @@ make coverage-report
 - It's possible to schedule a timer with zero delay.
 - The timers are only expired when they are successfully called or permanently failed. In another word, if the requested delay is past due, even after some hours, the timer is not considered expired.
 - A manage Redis cluster will be used, therefore I didn't configure Redis for persisting data on disk.
-
-## Tech debts
-- the permanently failed timers are not archived. they could be archived, or they could go to a DLQ queue for troubleshooting.
-- Create a deny-list for hosts with many non-retryable errors
-- Implement some component/integration tests.
-
-## Extra features for future
-- Politeness of the service: `httpqueue` should respect the rate limit of webhook's host. If the server responds with 429 with metadata, it should be respected. 
-- Instrumenting the queue size, number of retries and the timers delays, for tuning concurrency and scalability. 
